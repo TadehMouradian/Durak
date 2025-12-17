@@ -1,15 +1,15 @@
 public class ListNode
 {
-    private Object value;
+    private Player value;
 	private ListNode next;
 	
-	public ListNode(Object initValue, ListNode initNext)
+	public ListNode(Player initValue, ListNode initNext)
 	{
 		value = initValue;
 		next = initNext;
 	}
 	
-	public Object getValue()
+	public Player getValue()
 	{
 		return value;
 	}
@@ -19,7 +19,7 @@ public class ListNode
 		return next;
 	}
 	
-	public void setValue(Object theNewValue)
+	public void setValue(Player theNewValue)
 	{
 		value = theNewValue;
 	}

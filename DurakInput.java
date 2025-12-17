@@ -1,15 +1,23 @@
 public class DurakInput
 {
-    private int usr;
-    private int r;
+    private int user;
+    private int river;
     private boolean rotate;
     private boolean attack;
     private boolean lost;
+
+    public DurakInput(){
+        user = -1;
+        river = -1;
+        rotate = false;
+        attack = false;
+        lost = false;
+    }
     
-    public DurakInput(int user, int river, boolean ro, boolean atk, boolean lose)
+    public DurakInput(int usr, int r, boolean ro, boolean atk, boolean lose)
     {
-        usr = user;
-        r = river;
+        user = usr;
+        river = r;
         rotate = ro;
         attack = atk;
         lost = lose;
@@ -17,12 +25,12 @@ public class DurakInput
 
     public int indexPlayerCardInput()
     {
-        return usr;
+        return user;
     }
 
     public int riverIndex()
     {
-        return r;
+        return river;
     }
 
     public boolean rotateEntered()

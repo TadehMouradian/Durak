@@ -6,20 +6,20 @@ public class DurakClient
         char[][] print = new char[43][100];
         ListNode moveOrder = null;
         ListNode moveCopy = null;
-        ListNode speedOrder = null;
+        ListNode speedOrder = null; // removed
         ListNode speedFirst = null;
         Durak game = new Durak();
-        Player user = new Player(game.powerSuit());
+        Player user = new Player(game.powerSuit()); // moved over
         DurakAi ai1 = new DurakAi(game.powerSuit());
         DurakAi ai2 = new DurakAi(game.powerSuit());
         DurakAi ai3 = new DurakAi(game.powerSuit());
         Set<Player> temp = new HashSet<Player>();
         Set<Player> inGame = new HashSet<Player>();
-        ArrayList<Object> river = new ArrayList<Object>();
-        ArrayList<Card> ai1Card;
+        ArrayList<Object> river = new ArrayList<Object>(); // moved over
+        ArrayList<Card> ai1Card; // shouldnt be needed
         ArrayList<Card> ai2Card;
         ArrayList<Card> ai3Card;
-        Card smallestPower = null;
+        Card smallestPower = null; // moved over
         Player smallestCard = null;
         int numPrint = 0;
         Scanner in = new Scanner(System.in);
@@ -31,7 +31,13 @@ public class DurakClient
         Set<Player> someTemp = new HashSet<Player>();
         boolean open = false;
 
-        for(int i = 0; i < 6; i++)
+        /* ideally this should just be
+         *  Durak game = new Durak();
+         *  while(!game.gameEnded()){
+         *      game.nextTurn();
+         *  }
+         */
+        for(int i = 0; i < 6; i++) // moved over
         {
             user.add(game.deal());
             ai1.add(game.deal());
@@ -39,23 +45,23 @@ public class DurakClient
             ai3.add(game.deal());
         }
 
-        ai1Card = ai1.cards();
+        ai1Card = ai1.cards(); // m
         ai2Card = ai2.cards();
         ai3Card = ai3.cards();
 
-        temp.add(ai1);
+        temp.add(ai1); // ?
         temp.add(ai2);
         temp.add(ai3);
         temp.add(user);
 
-        inGame.add(ai1);
+        inGame.add(ai1); // ?
         inGame.add(ai2);
         inGame.add(ai3);
         inGame.add(user);
 
         Player fastest = null;
 
-        while(!temp.isEmpty())
+        while(!temp.isEmpty()) // removed
         {
             for(Player t : temp)
             {
@@ -99,6 +105,7 @@ public class DurakClient
         }
         speedOrder.setNext(speedFirst);
 
+        // m
         for(Card c : user.cards())
         {
             if(smallestPower == null && (c.suit().equals(game.powerSuit())))
@@ -112,7 +119,7 @@ public class DurakClient
                 smallestCard = user;
             }
         }
-
+// m
         for(Card c : ai1Card)
         {
             if(smallestPower == null && c.suit().equals(game.powerSuit()))
@@ -126,7 +133,7 @@ public class DurakClient
                 smallestCard = ai1;
             }
         }
-
+// m
         for(Card c : ai2Card)
         {
             if(smallestPower == null && c.suit().equals(game.powerSuit()))
@@ -140,7 +147,7 @@ public class DurakClient
                 smallestCard = ai2;
             }
         }
-
+//m
         for(Card c : ai3Card)
         {
             if(smallestPower == null && c.suit().equals(game.powerSuit()))
@@ -154,7 +161,7 @@ public class DurakClient
                 smallestCard = ai3;
             }
         }
-
+// m
         moveOrder = new ListNode(smallestCard, null);
 
         if(smallestCard == user)
@@ -203,12 +210,14 @@ public class DurakClient
         }
         moveOrder = moveOrder.getNext();
         moveCopy = moveOrder;
+
         while(inGame.size() != 1)
         {
             Player atk = (Player)(moveOrder.getValue());
             Player def = (Player)(moveOrder.getNext().getValue());
             boolean atkB = true;
             
+            // from here to line 405 is for printing board
             for(int r = 0; r < print.length; r++)
             {
                 for(int c = 0; c < print[r].length; c++)
@@ -394,6 +403,7 @@ public class DurakClient
             print[22][89] = (char)(ai1.cards().size() / 10 + 48);
             print[22][90] = (char)(ai1.cards().size() % 10 + 48);
 
+            // from here to line 574 is for printing the user's cards
             char[][] cardPrint1;
             char[][] cardPrint2;
             char[][] cardPrint3;
@@ -562,6 +572,8 @@ public class DurakClient
                     col += 10;
                 }
             }
+
+            // from here to line 709 is for printing the river
             col = 3;
             int colO = 27;
             int row = 10;
@@ -695,6 +707,8 @@ public class DurakClient
                     row += 11;
                 }
             }
+            
+            // here to line 760 is actually printing
             colO = 27;
             row = 10;
             for(char[] c : print)
@@ -745,6 +759,7 @@ public class DurakClient
                 }
             }
 
+            // start of turn logic
             if(river.size() == 0 || river.size() == 6 || river.size() == def.numCards() || someTemp.size() == inGame.size() - 1)
             {
                 open = false;
@@ -1300,12 +1315,13 @@ public class DurakClient
             }
         }
     }
-    public static int getNum(String r)
+    public static int getNum(String r) // moved
 {
     String i_num = r;
 	int num = -1;
 	boolean rep = true;
     Scanner in = new Scanner(System.in);
+
     while (rep) {
 			try {
 				  if(!i_num.equals(r))

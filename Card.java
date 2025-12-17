@@ -26,6 +26,7 @@ public class Card implements Comparable<Card>
         return value;
     }
 
+    // adding the suit value comparison from player class and just do edge cases later with power suits
     public int compareTo(Card other)
     {
         return value - other.value();

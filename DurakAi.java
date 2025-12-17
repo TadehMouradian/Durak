@@ -1,7 +1,7 @@
 import java.util.*;
 public class DurakAi extends Player
 {
-    private int speed;
+    private int speed; // remove
     private int aggressiveness;
     private int longP;
     

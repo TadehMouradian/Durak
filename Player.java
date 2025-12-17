@@ -9,6 +9,7 @@ public class Player
     private int clubValue = -10000;
     private int powerValue = 20000;
     private String powerSuit;
+
     public Player(String power)
     {
         hand = new ArrayList<Card>();
@@ -16,6 +17,7 @@ public class Player
         powerSuit = power;
     }
 
+    //insert in order instead of sorting probably
     public void add(Card c)
     {
         hand.add(c);
