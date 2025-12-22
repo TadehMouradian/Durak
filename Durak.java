@@ -113,23 +113,25 @@ public class Durak
                     else{
                         if(checkNum(res)){
                             playerIndex = Integer.parseInt(res);
-                            //attack = new DurakInput(index, -1, false, true, false);
+
                             if(playerIndex < 0/*<= 0 since index is printed starting with 1? */ || playerIndex >= defender.cards().size()){
                                 System.out.println("Index is out of bounds, try again.\n");
                             }
-                            else if(!legalAttack(attack, attacker)){ // check legal defense possible with entered card which may need a different method also check if rotation is valid too
-                                System.out.println("That move is illegal, try again.\n"); // this might be just covered in the later check after they have entered the river index
-                            }
                             else{
-                                System.out.print("\nChoose a card on the field to cover by entering its index (index is displayed to the right of the card) or enter R or r to rotate: ");
+                                System.out.print("\nChoose a card on the field to cover by entering its index (index is displayed to the right of the card) or enter R or r to rotate, or enter N or n to cancel your earlier selection: ");
                                 res = in.nextLine();
 
                                 if(res.equals("R") || res.equals("r")) // check if allowed to do this
                                 {
-                                    river.add(defender.play(playerIndex - 1)); // other person enough cards to cover to make legal check too
-                                    players = players.getNext();
+                                    if(!legalDefense(/*rotation */)){
+                                        System.out.println("That move is illegal, try again.\n");
+                                    }
+                                    else{
+                                        river.add(defender.play(playerIndex - 1)); // other person enough cards to cover to make legal check too
+                                        players = players.getNext();
+                                    }
                                 }
-                                else if(checkNum(res)){
+                                else if(!res.equalsIgnoreCase("N") && checkNum(res)){
                                     riverIndex = Integer.parseInt(res);
 
                                     if(riverIndex < 0/*<= 0 since index is printed starting with 1? */ || riverIndex >= river.size()){
@@ -137,6 +139,7 @@ public class Durak
                                     }
                                     else if(!legalDefense()){ // check if with river index if the defense is legal
 // also there should be a way to abort the defense although it might already be like that since theres no while loop here unlike before
+                                        System.out.println("That move is illegal, try again.\n");
                                     }
                                     else{
                                         river.set(riverIndex - 1, new Combination((Card)(river.get(riverIndex - 1)), defender.play(playerIndex - 1)));
@@ -225,9 +228,23 @@ public class Durak
             pickup = true;
         }
         else if(pickup){
+            Player pickingUp = players.getNext().getValue();
+            for(int i = 0; i < river.size(); i++){
+                if(river.get(i) instanceof Combination){
+                    pickingUp.add(((Combination)river.get(i)).cards()[0]);
+                    pickingUp.add(((Combination)river.get(i)).cards()[1]);
+                }
+                else{
+                    pickingUp.add(((Card)river.get(i)));
+                }
+            }
+            players = players.getNext().getNext();
+            river.clear();
             pickup = false;
         }
         else if(trash){
+            river.clear();
+            players = players.getNext();
             trash = false;
         }
         else if(legalAttackPossible(players.getValue())){
