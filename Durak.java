@@ -103,11 +103,12 @@ public class Durak
 
                 do{
                     System.out.print("\nChoose a card from your deck to defend with (or rotate) by entering its index (index is displayed to the right of the card) or N or n to pick up the cards: ");
-                    res = in.nextLine(); // system.in input needs here
+                    res = in.nextLine();
 
                     if(res.equals("N") || res.equals("n")){
                         defense = new DurakInput(-1, -1, false, false, true /*used to be false */);
                         pickup = true;
+                        defending = false;
                         contin = false;
                     }
                     else{
@@ -121,111 +122,50 @@ public class Durak
                                 System.out.print("\nChoose a card on the field to cover by entering its index (index is displayed to the right of the card) or enter R or r to rotate, or enter N or n to cancel your earlier selection: ");
                                 res = in.nextLine();
 
-                                if(res.equals("R") || res.equals("r")) // check if allowed to do this
+                                if(res.equals("R") || res.equals("r"))
                                 {
-                                    if(!legalDefense(/*rotation */)){
+                                    defense = new DurakInput(-1, -1, true, true, false);
+                                    if(!legalDefense(defense, defender)){
                                         System.out.println("That move is illegal, try again.\n");
                                     }
                                     else{
-                                        river.add(defender.play(playerIndex - 1)); // other person enough cards to cover to make legal check too
+                                        river.add(defender.play(playerIndex - 1));
                                         players = players.getNext();
                                     }
                                 }
-                                else if(!res.equalsIgnoreCase("N") && checkNum(res)){
+                                else if(!res.equalsIgnoreCase("N") && checkNum(res)){ // ignore case the rest
                                     riverIndex = Integer.parseInt(res);
+                                    defense = new DurakInput(playerIndex, riverIndex, false, false, false);
 
                                     if(riverIndex < 0/*<= 0 since index is printed starting with 1? */ || riverIndex >= river.size()){
                                         System.out.println("Index is out of bounds, try again.\n");
                                     }
-                                    else if(!legalDefense()){ // check if with river index if the defense is legal
-// also there should be a way to abort the defense although it might already be like that since theres no while loop here unlike before
+                                    else if(!legalDefense(defense, defender)){
                                         System.out.println("That move is illegal, try again.\n");
                                     }
                                     else{
                                         river.set(riverIndex - 1, new Combination((Card)(river.get(riverIndex - 1)), defender.play(playerIndex - 1)));
                                     }
                                 }
-                                contin = true; //?
                             }
                         }
                     }
 
-                    // Check if the board is all covered then defending is false
-
-
-
+                    contin = false;
+                    for(int i = 0; i < river.size(); i++){
+                        if(river.get(i) instanceof Card){
+                            contin = true;
+                            defending = false;
+                            break;
+                        }
+                    }
                 }while(contin);
             }
-            /*
-            if(attack.attackEntered()){
-                Card c = attacker.play(attack.indexPlayerCardInput());
-                river.add(c);
-            }
-            else{
-                if(numPlayers > 2){
-                    openBoard = true;
-                }
-                else{
-                    attacking = false;
-                }
-            }
-
-                        System.out.print("\nChoose a card from your deck to defend with (or rotate) by entering its index (index is displayed to the right of the card) or N or n to pick up the cards: ");
-                        String res = in.nextLine();
-                        if(res.equals("N") || res.equals("n"))
-                        {
-                            pickUp = true;
-                            open = true;
-                        }
-                        else
-                        {
-                            int index = getNum(res);
-                            while(index < 0 || index > user.cards().size())
-                            {
-                                System.out.println("Invalid range.");
-                                System.out.print("\nChoose a card from your deck to defend with (or rotate) by entering its index (index is displayed to the right of the card) or N or n to pick up the cards: ");
-                                res = in.nextLine();
-                                if(res.equals("N") || res.equals("n"))
-                                {
-                                    pickUp = true;
-                                    open = true;
-                                }
-                                if(!pickUp)
-                                    index = getNum(res);
-                            }
-                            if(!pickUp)
-                            {
-                                System.out.print("\nChoose a card on the field to cover by entering its index (index is displayed to the right of the card) or enter R or r to rotate: ");
-                                res = in.nextLine();
-                                if(res.equals("R") || res.equals("r"))
-                                {
-                                    river.add(user.play(index - 1));
-                                    moveOrder = moveOrder.getNext();
-                                }
-                                else
-                                {
-                                    int othIndex = getNum(res);
-                                    while(index < 0 || index > user.cards().size())
-                                    {
-                                        System.out.println("Invalid range.");
-                                        System.out.print("\nChoose a card on the field to cover by entering its index (index is displayed to the right of the card) or enter R or r to rotate: ");
-                                        res = in.nextLine();
-                                        if(res.equals("R") || res.equals("r"))
-                                        {
-                                            river.add(user.play(index - 1));
-                                            moveOrder = moveOrder.getNext();
-                                            break;
-                                        }
-                                        othIndex = getNum(res);
-                                    }
-                                    river.set(othIndex - 1, new Combination((Card)(river.get(othIndex - 1)), user.play(index - 1)));
-                                }
-                            }
-                        }*/
         }
         else if(defending){
             System.out.println("No legal defense possible, picking up the board.\n");
             pickup = true;
+            defending = false;
         }
         else if(pickup){
             Player pickingUp = players.getNext().getValue();
@@ -261,7 +201,7 @@ public class Durak
 
                 do{
                     System.out.print("\nChoose a card from your deck to attack with by entering its index (index is displayed to the right of the card) or N or n to finish your turn: ");
-                    res = in.nextLine(); // system.in input needs here
+                    res = in.nextLine();
 
                     if(res.equals("N") || res.equals("n")){
                         attack = new DurakInput(-1, -1, false, false, false);
@@ -311,9 +251,6 @@ public class Durak
         in.close();
 
 
-
-
-
         // At some point there should be a check to see if a player has won and should be removed from the game and also check
         // to see if there are enough players to keep going or end the game
     }
@@ -330,13 +267,25 @@ public class Durak
                 for(int j = 0; j < cards.size(); j++)
                 {
                     DurakInput d = new DurakInput(j, i, false, false, false);
-                    if(legalDefense(d, p, riv))
+                    if(legalDefense(d, p))
                         possible = true;
                 }
             }
         }
         return possible;
     }
+
+
+
+
+
+
+    // Why does durakinput exist in general lowkey
+
+
+
+
+
 
     public boolean legalAttackPossible(Player p)
     {
@@ -357,15 +306,15 @@ public class Durak
         return possible;
     }
 
-    public boolean legalDefense(DurakInput d, Player p, ArrayList<Object> riv)
+    public boolean legalDefense(DurakInput d, Player p) // remove player p maybe actually nevermind maybe
     {
         if(d.rotateEntered())
         {
-            return (rotatePossible(riv) && p.getCard(d.indexPlayerCardInput()).rank().equals(((Card)riv.get(0)).rank()));
+            return (rotatePossible(river) && p.getCard(d.indexPlayerCardInput()).rank().equals(((Card)river.get(0)).rank()));
         }
         else
         {
-            Card rivCard = (Card)riv.get(d.riverIndex());
+            Card rivCard = (Card)river.get(d.riverIndex());
             Card handCard = p.getCard(d.indexPlayerCardInput());
             if(rivCard.suit().equals(handCard.suit()))
             {
