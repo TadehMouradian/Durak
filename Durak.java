@@ -1,6 +1,5 @@
 import java.util.ArrayList;
 import java.util.Scanner;
-import java.util.TreeSet;
 public class Durak
 {
     private Deck cards;
@@ -89,11 +88,12 @@ public class Durak
 // Migrate the attack function to a prompt attack function so that it can just be called by the attack if statement
         Scanner in = new Scanner(System.in);
 
-        if(defending && legalDefensePossible(players.getNext().getValue())){ // to cover all cards
+        if(defending && legalDefensePossible(players.getNext().getValue())){
             Player defender = players.getNext().getValue();
             DurakInput defense = new DurakInput();
 
             if(defender instanceof DurakAi){
+                // do while until all cards covered as well or it could work by one by one cards if so change the below code or maybe dont idk
                 defense = ((DurakAi)defender).playDefense(river, cards.size(), powerSuit);
             }
             else{
@@ -155,7 +155,7 @@ public class Durak
                     for(int i = 0; i < river.size(); i++){
                         if(river.get(i) instanceof Card){
                             contin = true;
-                            defending = false;
+                            //defending = false; //?
                             break;
                         }
                     }
@@ -167,7 +167,7 @@ public class Durak
             pickup = true;
             defending = false;
         }
-        else if(pickup){
+        else if(pickup){ // possibly move pickup to below attack (?), since the attackers should be able to place down one final set of cards if the defender decides to pick up
             Player pickingUp = players.getNext().getValue();
             for(int i = 0; i < river.size(); i++){
                 if(river.get(i) instanceof Combination){
@@ -187,70 +187,159 @@ public class Durak
             players = players.getNext();
             trash = false;
         }
-        else if(legalAttackPossible(players.getValue())){
-            Player attacker = players.getValue();
+        else{
+            Player initialAttacker = players.getValue();
+            Player defender = players.getNext().getValue();
             DurakInput attack = new DurakInput();
+            ListNode temp = players;
+            int count = numPlayers;
 
-            if(attacker instanceof DurakAi){
-                attack = ((DurakAi)attacker).playOffense(river, cards.size(), powerSuit);
-            }
-            else{
+            do{
                 int index = -1;
                 String res;
                 boolean contin = true;
 
-                do{
-                    System.out.print("\nChoose a card from your deck to attack with by entering its index (index is displayed to the right of the card) or N or n to finish your turn: ");
-                    res = in.nextLine();
-
-                    if(res.equals("N") || res.equals("n")){
-                        attack = new DurakInput(-1, -1, false, false, false);
-                        contin = false;
+                if(temp.getValue() == initialAttacker){
+                    if(temp.getValue() instanceof DurakAi){
+                        attack = ((DurakAi)temp.getValue()).playOffense(river, cards.size(), powerSuit);
                     }
-                    else{
-                        if(checkNum(res)){
-                            index = Integer.parseInt(res);
-                            attack = new DurakInput(index, -1, false, true, false);
-                            if(index < 0 || index >= attacker.cards().size()){
-                                System.out.println("Index is out of bounds, try again.\n");
+                    else if(legalAttackPossible(temp.getValue())){
+                        do{
+                            boolean covered = false;
+                            for(int i = 0; i < river.size(); i++){
+                                covered = covered || river.get(i) instanceof Combination;
                             }
-                            else if(!legalAttack(attack, attacker)){
-                                System.out.println("That move is illegal, try again.\n");
+
+                            if(covered || pickup){ // open board + allowed no cards placed
+                                System.out.print("\nChoose a card from your deck to attack with by entering its index (index is displayed to the right of the card) or N or n to finish your turn: ");
+                                res = in.nextLine();
+
+                                if(res.equals("N") || res.equals("n")){ // make it so they have to play at least 1 card if river is empty also make sure to change board to open if they end their turn and board has a combination or someone said to pickup
+                                    attack = new DurakInput(-1, -1, false, false, false);
+                                    contin = false;
+                                    openBoard = true;
+                                }
+                                else{
+                                    if(checkNum(res)){
+                                        index = Integer.parseInt(res);
+                                        attack = new DurakInput(index, -1, false, true, false);
+                                        if(index < 0 || index >= temp.getValue().cards().size()){
+                                            System.out.println("Index is out of bounds, try again.\n");
+                                        }
+                                        else if(!legalAttack(attack, temp.getValue())){
+                                            System.out.println("That move is illegal, try again.\n");
+                                        }
+                                        else{
+                                            contin = false; // used to be true but I believe it should be false
+                                        }
+                                    }
+                                }
+                            }
+                            else if(river.size() == 0){ // no open board + has to place at least 1 card
+                                System.out.print("\nChoose a card from your deck to attack with by entering its index (index is displayed to the right of the card): ");
+                                res = in.nextLine();
+
+                                if(checkNum(res)){
+                                    index = Integer.parseInt(res);
+                                    attack = new DurakInput(index, -1, false, true, false);
+                                    if(index < 0 || index >= temp.getValue().cards().size()){
+                                        System.out.println("Index is out of bounds, try again.\n");
+                                    }
+                                    else if(!legalAttack(attack, temp.getValue())){
+                                        System.out.println("That move is illegal, try again.\n");
+                                    }
+                                    else{
+                                        contin = false; // same as before
+                                    }
+                                }
                             }
                             else{
-                                contin = true;
+                                System.out.print("\nChoose a card from your deck to attack with by entering its index (index is displayed to the right of the card) or N or n to finish your turn: ");
+                                res = in.nextLine();
+
+                                if(res.equals("N") || res.equals("n")){ // make it so they have to play at least 1 card if river is empty also make sure to change board to open if they end their turn and board has a combination or someone said to pickup
+                                    attack = new DurakInput(-1, -1, false, false, false);
+                                    contin = false;
+                                }
+                                else{
+                                    if(checkNum(res)){
+                                        index = Integer.parseInt(res);
+                                        attack = new DurakInput(index, -1, false, true, false);
+                                        if(index < 0 || index >= temp.getValue().cards().size()){
+                                            System.out.println("Index is out of bounds, try again.\n");
+                                        }
+                                        else if(!legalAttack(attack, temp.getValue())){
+                                            System.out.println("That move is illegal, try again.\n");
+                                        }
+                                        else{
+                                            contin = false; // same comment 
+                                        }
+                                    }
+                                }
                             }
+                        }while(contin);
+                    }
+                    else{
+                        System.out.println("No legal attack possible, ending turn automatically.\n");
+                        
+                        boolean covered = false;
+                        for(int i = 0; i < river.size(); i++){
+                            covered = covered || river.get(i) instanceof Combination;
+                        }
+                        if(pickup || covered){
+                            openBoard = true;
                         }
                     }
-                }while(contin);
-            }
+                }
+                else if(openBoard && temp.getValue() != defender){
+                    if(temp.getValue() instanceof DurakAi){
+                        attack = ((DurakAi)temp.getValue()).playOffense(river, cards.size(), powerSuit);
+                    }
+                    else{
+                        do{
+                            System.out.print("\nChoose a card from your deck to attack with by entering its index (index is displayed to the right of the card) or N or n to finish your turn: ");
+                            res = in.nextLine();
 
-            if(attack.attackEntered()){
-                Card c = attacker.play(attack.indexPlayerCardInput());
-                river.add(c);
-            }
-            else{
-                if(numPlayers > 2){
-                    openBoard = true;
+                            if(res.equals("N") || res.equals("n")){
+                                attack = new DurakInput(-1, -1, false, false, false);
+                                contin = false;
+                            }
+                            else{
+                                if(checkNum(res)){
+                                    index = Integer.parseInt(res);
+                                    attack = new DurakInput(index, -1, false, true, false);
+                                    if(index < 0 || index >= temp.getValue().cards().size()){
+                                        System.out.println("Index is out of bounds, try again.\n");
+                                    }
+                                    else if(!legalAttack(attack, temp.getValue())){
+                                        System.out.println("That move is illegal, try again.\n");
+                                    }
+                                    else{
+                                        contin = false; // same comment
+                                    }
+                                }
+                            }
+                        }while(contin);
+                    }
+                }
+
+                if(attack.attackEntered()){
+                    river.add(temp.getValue().play(attack.indexPlayerCardInput()));
                 }
                 else{
-                    defending = true;
+                    temp = temp.getNext();
+                    count--;
                 }
-            }
-        }
-        else{
-            if(numPlayers > 2){
-                System.out.println("No legal attack possible, opening the board.\n");
-                openBoard = true;
-            }
-            else{
-                System.out.println("No legal attack possible.\n");
+
+                attack = new DurakInput();
+            }while(count > 0);
+            
+            if(!pickup){
                 defending = true;
             }
         }
+
         in.close();
-
-
         // At some point there should be a check to see if a player has won and should be removed from the game and also check
         // to see if there are enough players to keep going or end the game
     }
