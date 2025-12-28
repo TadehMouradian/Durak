@@ -1,7 +1,6 @@
 import java.util.ArrayList;
 import java.util.Scanner;
-public class Durak
-{
+public class Durak{
     private Deck cards;
     private String[] suits = {"Spade", "Club", "Heart", "Diamond"};
     private String[] ranks = {"6", "7", "8", "9", "10", "J", "Q", "K", "A"};
@@ -15,8 +14,7 @@ public class Durak
     private int numPlayers;
     private ArrayList<Object> river = new ArrayList<Object>();
 
-    public Durak()
-    {
+    public Durak(){
         cards = new Deck(suits, ranks, values);
         powerSuit = suits[(int)(Math.random() * 4)];
         initializePlayers();
@@ -122,8 +120,7 @@ public class Durak
                                 System.out.print("\nChoose a card on the field to cover by entering its index (index is displayed to the right of the card) or enter R or r to rotate, or enter N or n to cancel your earlier selection: ");
                                 res = in.nextLine();
 
-                                if(res.equals("R") || res.equals("r"))
-                                {
+                                if(res.equals("R") || res.equals("r")){
                                     defense = new DurakInput(-1, -1, true, true, false);
                                     if(!legalDefense(defense, defender)){
                                         System.out.println("That move is illegal, try again.\n");
@@ -163,11 +160,11 @@ public class Durak
             }
         }
         else if(defending){
-            System.out.println("No legal defense possible, picking up the board.\n");
+            System.out.println("No legal defense possible, picking up the board.\n"); // maybe only print if this is the user
             pickup = true;
             defending = false;
         }
-        else if(pickup){ // possibly move pickup to below attack (?), since the attackers should be able to place down one final set of cards if the defender decides to pick up
+        else if(pickup){ // possibly move pickup to below attack, since the attackers should be able to place down one final set of cards if the defender decides to pick up
             Player pickingUp = players.getNext().getValue();
             for(int i = 0; i < river.size(); i++){
                 if(river.get(i) instanceof Combination){
@@ -182,7 +179,7 @@ public class Durak
             river.clear();
             pickup = false;
         }
-        else if(trash){
+        else if(trash){ // for both pickup and trash make sure to deal cards until deck is empty or everyone has >6 cards
             river.clear();
             players = players.getNext();
             trash = false;
@@ -338,103 +335,80 @@ public class Durak
                 defending = true;
             }
         }
-
         in.close();
         // At some point there should be a check to see if a player has won and should be removed from the game and also check
         // to see if there are enough players to keep going or end the game
     }
     
-    public boolean legalDefensePossible(Player p)
-    {
+    public boolean legalDefensePossible(Player p){
         ArrayList<Card> cards = p.cards();
-        ArrayList<Object> riv = river;
-        boolean possible = false;
-        for(int i = 0; i < riv.size(); i++)
-        {
-            if(riv.get(i) instanceof Card)
-            {
-                for(int j = 0; j < cards.size(); j++)
-                {
+        boolean possible = true;
+
+        for(int i = 0; i < river.size() && possible; i++){
+            if(river.get(i) instanceof Card){
+                for(int j = 0; j < cards.size(); j++){
                     DurakInput d = new DurakInput(j, i, false, false, false);
-                    if(legalDefense(d, p))
-                        possible = true;
+                    if(legalDefense(d, p)){
+                        cards.remove(j);
+                        break;
+                    }
+                    else if(j == cards.size() - 1){
+                        possible = false;
+                        break;
+                    }
                 }
             }
         }
         return possible;
     }
 
-
-
-
-
-
-    // Why does durakinput exist in general lowkey
-
-
-
-
-
-
-    public boolean legalAttackPossible(Player p)
-    {
+    public boolean legalAttackPossible(Player p){
         ArrayList<Card> cards = p.cards();
-        ArrayList<Object> riv = river;
         boolean possible = false;
 
-        for(int i = 0; i < riv.size(); i++)
-        {
-            for(int j = 0; j < cards.size(); j++)
-            {
-                if(legalAttack(new DurakInput(j, -1, false, true, false), p))
+        for(int i = 0; i < river.size(); i++){
+            for(int j = 0; j < cards.size(); j++){
+                if(legalAttack(new DurakInput(j, -1, false, true, false), p)){
                     possible = true;
+                    break;
+                }
             }
         }
-        if(riv.size() == 0)
-            possible = true;
-        return possible;
+        return possible || river.size() == 0;
     }
 
-    public boolean legalDefense(DurakInput d, Player p) // remove player p maybe actually nevermind maybe
-    {
-        if(d.rotateEntered())
-        {
+    public boolean legalDefense(DurakInput d, Player p){
+        if(d.rotateEntered()){
             return (rotatePossible(river) && p.getCard(d.indexPlayerCardInput()).rank().equals(((Card)river.get(0)).rank()));
         }
-        else
-        {
+        else{
             Card rivCard = (Card)river.get(d.riverIndex());
             Card handCard = p.getCard(d.indexPlayerCardInput());
-            if(rivCard.suit().equals(handCard.suit()))
-            {
+            if(rivCard.suit().equals(handCard.suit())){
                 return (rivCard.compareTo(handCard) < 0);
             }
-            else
-            {
+            else{
                 return (handCard.suit().equals(powerSuit));
             }
         }
     }
 
-    public boolean legalAttack(DurakInput d, Player p)
-    {
+    public boolean legalAttack(DurakInput d, Player p){
         boolean legal = false;
-        ArrayList<Object> riv = river; // chage
 
-        if(d.attackEntered())
-        {
-            for(int i = 0; i < riv.size(); i++)
-            {
+        if(d.attackEntered()){
+            for(int i = 0; i < river.size(); i++){
                 Card playerCard = p.getCard(d.indexPlayerCardInput());
-                if(!(riv.get(i) instanceof Combination) && ((Card)riv.get(i)).rank().equals(playerCard.rank()))
-                {
+                if(river.get(i) instanceof Card && ((Card)river.get(i)).rank().equals(playerCard.rank())){
                     legal = true;
+                    break;
                 }
-                else if(riv.get(i) instanceof Combination)
-                {
-                    Card[] cards = ((Combination)riv.get(i)).cards();
-                    if(cards[0].rank().equals(playerCard.rank()) || cards[1].rank().equals(playerCard.rank()))
+                else if(river.get(i) instanceof Combination){
+                    Card[] cards = ((Combination)river.get(i)).cards();
+                    if(cards[0].rank().equals(playerCard.rank()) || cards[1].rank().equals(playerCard.rank())){
                         legal = true;
+                        break;
+                    }
                 }
             }
         }
@@ -442,22 +416,21 @@ public class Durak
         return legal;
     }
 
-    public boolean rotatePossible(ArrayList<Object> riv)
-    {
+    public boolean rotatePossible(ArrayList<Object> riv){
         boolean allUncover = true;
         boolean allSame = true;
 
-        for(int i = 0; i < riv.size(); i++)
-        {
-            if(riv.get(i) instanceof Combination)
+        for(int i = 0; i < riv.size(); i++){
+            if(riv.get(i) instanceof Combination){
                 allUncover = false;
-            else if(i > 0 && allUncover)
-            {
+                break;
+            }
+            else if(i > 0 && allUncover){
                 Card c1 = (Card)riv.get(i);
                 Card c2 = (Card)riv.get(i-1);
-                if(!(c1.suit().equals(c2.suit()) && c2.rank().equals(c1.rank())))
-                {
+                if(!(c1.suit().equals(c2.suit()) && c2.rank().equals(c1.rank()))){
                     allSame = false;
+                    break;
                 }
             }
             
@@ -465,8 +438,7 @@ public class Durak
         return (riv.size() > 0 && allUncover && allSame);
     }
 
-    private boolean checkNum(String r)
-    {
+    private boolean checkNum(String r){
         try{
             Integer.parseInt(r);
             return true;
