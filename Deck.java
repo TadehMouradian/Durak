@@ -1,17 +1,13 @@
 import java.util.ArrayList;
-public class Deck
-{
+public class Deck{
     private ArrayList<Card> deck;
     private int size;
 
-    public Deck(String[] suits, String[] ranks, int[] values)
-    {
+    public Deck(String[] suits, String[] ranks, int[] values){
         deck = new ArrayList<Card>();
         
-        for(int i = 0; i < suits.length; i++)
-        {
-            for(int j = 0; j < ranks.length; j++)
-            {
+        for(int i = 0; i < suits.length; i++){
+            for(int j = 0; j < ranks.length; j++){
                 deck.add(new Card(suits[i], ranks[j], values[j]));
             }
         }
@@ -19,23 +15,19 @@ public class Deck
         shuffle();
     }
 
-    public boolean isEmpty()
-    {
+    public boolean isEmpty(){
         return size == 0;
     }
 
-    public int size()
-    {
+    public int size(){
         return size;
     }
 
-    public void shuffle() 
-    {
+    public void shuffle(){
         size = deck.size();
         Card swap;
         int random;
-        for(int i = size - 1; i > 0; i--)
-        {
+        for(int i = size - 1; i > 0; i--){
             random = (int)(Math.random() * (i+1));
             swap = deck.get(i);
             deck.set(i, deck.get(random));
@@ -43,10 +35,8 @@ public class Deck
         }
     }
 
-    public Card deal() 
-    {
-        if(!isEmpty())
-        {
+    public Card deal(){
+        if(!isEmpty()){
             size--;
             return deck.get(size);
         }

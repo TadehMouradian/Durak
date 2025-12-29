@@ -1,8 +1,6 @@
 import java.util.*;
-public class DurakClient
-{
-    public static void main(String[] args)
-    {
+public class DurakClient{
+    public static void main(String[] args){
         char[][] print = new char[43][100];
         ListNode moveOrder = null;
         ListNode moveCopy = null;

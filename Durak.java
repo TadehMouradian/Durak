@@ -66,24 +66,24 @@ public class Durak{
     }
 
     public boolean gameEnded(){
-        return players.getNext() == players;
+        return numPlayers == 1;
     }
 
     public void nextTurn(){
         // edge case 2 players left 1 player attacks and the other defends and they both have 0 cards
-// defense first
-// then open board
-// then pickup
-// then trash
-// then attack
-// potentially change the variable from an attacking variable to a defending variable
+        // defense first
+        // then open board
+        // then pickup
+        // then trash
+        // then attack
+        // potentially change the variable from an attacking variable to a defending variable
 
 
-// Defense
-// Pickup
-// Trash
-// Merge attack and open with a loop through all attackers and only let the others get prompted to attack if openBoard
-// Migrate the attack function to a prompt attack function so that it can just be called by the attack if statement
+        // Defense
+        // Pickup
+        // Trash
+        // Merge attack and open with a loop through all attackers and only let the others get prompted to attack if openBoard
+        // Migrate the attack function to a prompt attack function so that it can just be called by the attack if statement
         Scanner in = new Scanner(System.in);
 
         if(defending && legalDefensePossible(players.getNext().getValue())){
@@ -178,11 +178,13 @@ public class Durak{
             players = players.getNext().getNext();
             river.clear();
             pickup = false;
+            defending = false;
         }
         else if(trash){ // for both pickup and trash make sure to deal cards until deck is empty or everyone has >6 cards
             river.clear();
             players = players.getNext();
             trash = false;
+            defending = false;
         }
         else{
             Player initialAttacker = players.getValue();
@@ -340,6 +342,24 @@ public class Durak{
         // to see if there are enough players to keep going or end the game
     }
     
+    private void removeWinners(){
+        if(numPlayers == 1){
+            return;
+        }
+        ListNode temp = players.getNext(); // wrote getNext since defender will be last to be removed presumably
+        int i = 0;
+        while(i < numPlayers){
+            if(temp.getNext().getValue().numCards() == 0){
+                temp.setNext(temp.getNext().getNext());
+                numPlayers--;
+            }
+            else{
+                temp = temp.getNext();
+                i++;
+            }
+        }
+    }
+
     public boolean legalDefensePossible(Player p){
         ArrayList<Card> cards = p.cards();
         boolean possible = true;
