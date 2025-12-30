@@ -4,8 +4,8 @@ public class DurakAi extends Player{
     private int aggressiveness;
     private int longP;
     
-    public DurakAi(String power){
-        super(power);
+    public DurakAi(String power, String name){
+        super(power, name);
         setTolerance();
     }
 
@@ -16,7 +16,7 @@ public class DurakAi extends Player{
     }
 
     public DurakInput playDefense(ArrayList<Object> river, int deckSize, String powerSuit){
-        Durak temp = new Durak();
+        Durak temp = new Durak("temp");
         int rotIn = -1;
         Set<Card> cards = new TreeSet<Card>();
         Integer uniqueCards;

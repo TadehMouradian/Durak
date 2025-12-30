@@ -8,11 +8,13 @@ public class Player{
     private int clubValue = -10000;
     private int powerValue = 20000;
     private String powerSuit;
+    private String name;
 
-    public Player(String power){
+    public Player(String power, String n){
         hand = new ArrayList<Card>();
         numCards = 0;
         powerSuit = power;
+        name = n;
     }
 
     //insert in order instead of sorting probably
@@ -32,6 +34,10 @@ public class Player{
 
     public Card getCard(int ind){
         return hand.get(ind);
+    }
+
+    public String getName(){
+        return name;
     }
 
     public ArrayList<Card> cards(){
@@ -54,7 +60,7 @@ public class Player{
             swap = null;
             for(int j = i + 1; j < numCards; j++){
                 int value1 = hand.get(small).value();
-                System.out.println(j + " " + hand.size() + " " + numCards);
+                //System.out.println(j + " " + hand.size() + " " + numCards);
                 int value2 = hand.get(j).value();
                 
                 if(hand.get(i).suit().equals("Diamond")){
