@@ -45,7 +45,7 @@ public class Player{
     }
 
     public Card play(int index){
-        numCards = numCards - 1;
+        numCards--;
         return hand.remove(index);
     }
 
@@ -54,6 +54,10 @@ public class Player{
         int small;
         Card swap;
 
+        //for(int i = 0; i < hand.size(); i++){
+        //    System.out.println(hand.get(i).suit() + " " + hand.get(i).rank());
+        //}
+        //System.out.println(numCards + " " + hand.size());
         for(int i = 0; i < numCards; i++){
             smallest = hand.get(i);
             small = i;

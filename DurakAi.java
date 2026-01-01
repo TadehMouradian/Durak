@@ -16,8 +16,43 @@ public class DurakAi extends Player{
     }
 
     public DurakInput playDefense(ArrayList<Object> river, int deckSize, String powerSuit){
-        Durak temp = new Durak("temp");
-        int rotIn = -1;
+        Durak d = new Durak("temp");
+        Player t = new Player(powerSuit, ".");
+        ArrayList<Card> temp = new ArrayList<Card>(super.cards());
+
+        for(int i = 0; i < temp.size(); i++){
+            t.add(temp.get(i));
+        }
+
+        if(d.rotatePossible(river)){
+            for(int i = 0; i < temp.size(); i++){
+                if(temp.get(i).rank().equals(((Card)river.get(0)).rank())){
+                    return new DurakInput(i, -1, true, false, false);
+                }
+            }
+        }
+        if(d.legalDefensePossible(t)){
+            for(int i = 0; i < river.size(); i++){
+                if(river.get(i) instanceof Card){
+                    for(int j = 0; j < temp.size(); j++){
+                        Card rivCard = (Card)river.get(i);
+                        Card handCard = temp.get(j);
+
+                        if(rivCard.suit().equals(handCard.suit())){
+                            if(rivCard.compareTo(handCard) < 0){
+                                return new DurakInput(j, i, false, false, false);
+                            }
+                        }
+                        else if(handCard.suit().equals(powerSuit)){
+                            return new DurakInput(j, i, false, false, false);
+                        }
+                    }
+                }
+            }
+        }
+        
+        return new DurakInput(-1, -1, false, false, true);
+        /*int rotIn = -1;
         Set<Card> cards = new TreeSet<Card>();
         Integer uniqueCards;
 
@@ -87,7 +122,8 @@ public class DurakAi extends Player{
                     rotIn = i;
                 }
             }
-            return new DurakInput(rotIn, -1, true, false, false);
+            System.out.println(rotIn);
+            return new DurakInput(rotIn, -1, true, false, false); // case 1
         }
         else if(winnable && (river.size() == 6 || river.size() == aiHand.size())){
             return new DurakInput(handDiscard.get(0), riverDiscard.get(0), false, false, false);
@@ -99,12 +135,33 @@ public class DurakAi extends Player{
             return new DurakInput(handDiscard.get(0), riverDiscard.get(0), false, false, false);
         }
         else{
-            return new DurakInput(-1, 01, false, false, true);
-        }
+            return new DurakInput(-1, 1, false, false, true);
+        }*/
     }
 
     public DurakInput playOffense(ArrayList<Object> river, int deckSize, String powerSuit){
-        ArrayList<Card> viable = new ArrayList<Card>();
+        ArrayList<Card> temp = new ArrayList<Card>(super.cards());
+        if(river.size() == 0){
+            return new DurakInput(0, -1, false, true, false);
+        }
+        for(int i = 0; i < river.size(); i++){
+            if(river.get(i) instanceof Combination){
+                for(int j = 0; j < temp.size(); j++){
+                    if(temp.get(j).rank().equals(((Combination)river.get(i)).cards()[0].rank()) || temp.get(j).rank().equals(((Combination)river.get(i)).cards()[1].rank())){
+                        return new DurakInput(j, -1, false, true, false);
+                    }
+                }
+            }
+            else{
+                for(int j = 0; j < temp.size(); j++){
+                    if(temp.get(j).rank().equals(((Card)river.get(i)).rank())){
+                        return new DurakInput(j, -1, false, true, false);
+                    }
+                }
+            }
+        }
+        return new DurakInput(-1, -1, false, false, true);
+        /*ArrayList<Card> viable = new ArrayList<Card>();
         ArrayList<Card> temp = super.cards();
         ArrayList<Card> aiHand = new ArrayList<Card>();
 
@@ -143,14 +200,14 @@ public class DurakAi extends Player{
         }
 
         if(i == viable.size()){
-            return new DurakInput(-1, -1, false, false, true);
+            return new DurakInput(-1, -1, false, false, true); // case 2
         }
         else{
             return new DurakInput(i, -1, false, true, false);
-        }
+        }*/
     }
 
-    public int getSpeed(){
-        return speed;
-    }
+    //public int getSpeed(){
+    //    return speed;
+    //}
 }

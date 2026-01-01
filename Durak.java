@@ -11,6 +11,7 @@ public class Durak{
     private boolean defending;
     private boolean openBoard;
     private boolean pickup;
+    private boolean pickupEntered;
     private boolean trash;
     private int numPlayers;
     private ArrayList<Object> river = new ArrayList<Object>();
@@ -24,22 +25,32 @@ public class Durak{
         defending = false;
         openBoard = false;
         pickup = false;
+        pickupEntered = false;
         trash = false;
         numPlayers = 4;
     }
 
     private void initializePlayers(String name){
         players = new ListNode(new Player(powerSuit, name), null);
+        playersStorage = new ListNode(new Player(powerSuit, name), null);
         ListNode temp = players;
+        ListNode temp2 = playersStorage;
         players.setNext(new ListNode(new DurakAi(powerSuit, "A.I. 1"), null));
         players = players.getNext();
+        playersStorage.setNext(new ListNode(new DurakAi(powerSuit, "A.I. 1"), null));
+        playersStorage = playersStorage.getNext();
         players.setNext(new ListNode(new DurakAi(powerSuit, "A.I. 2"), null));
         players = players.getNext();
+        playersStorage.setNext(new ListNode(new DurakAi(powerSuit, "A.I. 2"), null));
+        playersStorage = playersStorage.getNext();
         players.setNext(new ListNode(new DurakAi(powerSuit, "A.I. 3"), null));
         players = players.getNext();
+        playersStorage.setNext(new ListNode(new DurakAi(powerSuit, "A.I. 3"), null));
+        playersStorage = playersStorage.getNext();
         players.setNext(temp);
         players = players.getNext();
-        playersStorage = players;
+        playersStorage.setNext(temp2);
+        playersStorage = playersStorage.getNext();
     }
 
     private void initializeCards(){
@@ -47,6 +58,7 @@ public class Durak{
             for(int j = 0; j < 6; j++){
                 players.getValue().add(cards.deal());
             }
+            players = players.getNext();
         }
     }
 
@@ -97,7 +109,7 @@ public class Durak{
                     }
                     else{
                         if(checkNum(res)){
-                            playerIndex = Integer.parseInt(res);
+                            playerIndex = Integer.parseInt(res) - 1;
 
                             if(playerIndex < 0/*<= 0 since index is printed starting with 1? */ || playerIndex >= defender.cards().size()){
                                 System.out.println("Index is out of bounds, try again.\n");
@@ -117,7 +129,7 @@ public class Durak{
                                     }
                                 }
                                 else if(!res.equalsIgnoreCase("N") && checkNum(res)){ // ignore case the rest
-                                    riverIndex = Integer.parseInt(res);
+                                    riverIndex = Integer.parseInt(res) - 1;
                                     defense = new DurakInput(playerIndex, riverIndex, false, false, false);
 
                                     if(riverIndex < 0/*<= 0 since index is printed starting with 1? */ || riverIndex >= river.size()){
@@ -138,27 +150,27 @@ public class Durak{
 
             if(!defense.pickUp() && !defense.rotateEntered()){
                 // defend
-                river.set(defense.riverIndex() - 1, new Combination((Card)(river.get(defense.riverIndex() - 1)), defender.play(defense.indexPlayerCardInput() - 1))); // works?
+                river.set(defense.riverIndex()/* - 1*/, new Combination((Card)(river.get(defense.riverIndex()/* - 1*/)), defender.play(defense.indexPlayerCardInput()/* - 1*/))); // works?
             }
             else if(!defense.pickUp()){
                 // rotate
-                river.add(defender.play(defense.indexPlayerCardInput() - 1)); // works?
+                river.add(defender.play(defense.indexPlayerCardInput()/* - 1*/)); // works?
                 players = players.getNext();
             }
             else{
-                pickup = true;
+                pickupEntered = true;
                 defending = false;
             }
 
             defending = false;
-            for(int i = 0; i < river.size() && !defending; i++){
+            for(int i = 0; i < river.size() && !defending && !pickupEntered; i++){
                 defending = river.get(i) instanceof Card;
                 trash = !defending && i == 5;
             }
         }
         else if(defending){
             System.out.println("No legal defense possible, picking up the board.\n"); // maybe only print if this is the user
-            pickup = true;
+            pickupEntered = true;
             defending = false;
         }
         else if(pickup){ // possibly move pickup to below attack, since the attackers should be able to place down one final set of cards if the defender decides to pick up
@@ -174,6 +186,7 @@ public class Durak{
             }
             river.clear();
             pickup = false;
+            pickupEntered = false;
             defending = false;
             dealCards();
             removeWinners();
@@ -202,6 +215,15 @@ public class Durak{
                 if(temp.getValue() == initialAttacker){
                     if(temp.getValue() instanceof DurakAi){
                         attack = ((DurakAi)temp.getValue()).playOffense(river, cards.size(), powerSuit);
+                        if(!attack.attackEntered()){
+                            boolean covered = false;
+                            for(int i = 0; i < river.size() && !covered; i++){
+                                covered = river.get(i) instanceof Combination;
+                            }
+                            if(pickupEntered || covered){
+                                openBoard = true;
+                            }
+                        }
                     }
                     else if(legalAttackPossible(temp.getValue())){
                         do{
@@ -210,7 +232,7 @@ public class Durak{
                                 covered = river.get(i) instanceof Combination;
                             }
 
-                            if(covered || pickup){ // open board + allowed no cards placed
+                            if(covered || pickupEntered){ // open board + allowed no cards placed
                                 System.out.print("\nChoose a card from your deck to attack with by entering its index (index is displayed to the right of the card) or N or n to finish your turn: ");
                                 res = in.nextLine();
 
@@ -221,7 +243,7 @@ public class Durak{
                                 }
                                 else{
                                     if(checkNum(res)){
-                                        index = Integer.parseInt(res);
+                                        index = Integer.parseInt(res) - 1;
                                         attack = new DurakInput(index, -1, false, true, false);
                                         if(index < 0 /*<= 0 since index is printed starting with 1? */|| index >= temp.getValue().cards().size()){
                                             System.out.println("Index is out of bounds, try again.\n");
@@ -240,7 +262,7 @@ public class Durak{
                                 res = in.nextLine();
 
                                 if(checkNum(res)){
-                                    index = Integer.parseInt(res);
+                                    index = Integer.parseInt(res) - 1;
                                     attack = new DurakInput(index, -1, false, true, false);
                                     if(index < 0 /*<= 0 since index is printed starting with 1? */|| index >= temp.getValue().cards().size()){
                                         System.out.println("Index is out of bounds, try again.\n");
@@ -263,7 +285,7 @@ public class Durak{
                                 }
                                 else{
                                     if(checkNum(res)){
-                                        index = Integer.parseInt(res);
+                                        index = Integer.parseInt(res) - 1;
                                         attack = new DurakInput(index, -1, false, true, false);
                                         if(index < 0 /*<= 0 since index is printed starting with 1? */|| index >= temp.getValue().cards().size()){
                                             System.out.println("Index is out of bounds, try again.\n");
@@ -286,7 +308,7 @@ public class Durak{
                         for(int i = 0; i < river.size() && !covered; i++){
                             covered = river.get(i) instanceof Combination;
                         }
-                        if(pickup || covered){
+                        if(pickupEntered || covered){
                             openBoard = true;
                         }
                     }
@@ -306,7 +328,7 @@ public class Durak{
                             }
                             else{
                                 if(checkNum(res)){
-                                    index = Integer.parseInt(res);
+                                    index = Integer.parseInt(res) - 1;
                                     attack = new DurakInput(index, -1, false, true, false);
                                     if(index < 0 /*<= 0 since index is printed starting with 1? */|| index >= temp.getValue().cards().size()){
                                         System.out.println("Index is out of bounds, try again.\n");
@@ -339,9 +361,10 @@ public class Durak{
                 trash = river.get(i) instanceof Combination;
             }
 
-            defending = !pickup && !trash;
+            defending = !pickupEntered && !trash;
+            pickup = pickupEntered;
         }
-        in.close();
+        //in.close();
     }
 
     private void dealCards(){
@@ -914,10 +937,11 @@ public class Durak{
             }
             System.out.println();
         }
+        System.out.println();
     }
 
     public boolean legalDefensePossible(Player p){
-        ArrayList<Card> cards = p.cards();
+        ArrayList<Card> cards = new ArrayList<Card>(p.cards());
         boolean possible = true;
 
         for(int i = 0; i < river.size() && possible; i++){
@@ -939,7 +963,7 @@ public class Durak{
     }
 
     public boolean legalAttackPossible(Player p){
-        ArrayList<Card> cards = p.cards();
+        ArrayList<Card> cards = new ArrayList<Card>(p.cards());
         boolean possible = false;
 
         for(int i = 0; i < river.size(); i++){
@@ -989,7 +1013,7 @@ public class Durak{
             }
         }
 
-        return legal;
+        return legal || river.size() == 0;
     }
 
     public boolean rotatePossible(ArrayList<Object> riv){

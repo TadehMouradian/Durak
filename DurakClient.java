@@ -12,7 +12,7 @@ public class DurakClient{
         Durak game = new Durak(name);
         while(!game.gameEnded()){
             game.nextTurn();
-            TimeUnit.SECONDS.sleep(1);
+            //TimeUnit.SECONDS.sleep(1);
         }
         System.out.println("The loser is " + game.getLoser() + ".");
     }
