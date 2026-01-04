@@ -139,7 +139,10 @@ public class DurakAi extends Player{
         }*/
     }
 
-    public DurakInput playOffense(ArrayList<Object> river, int deckSize, String powerSuit){
+    public DurakInput playOffense(ArrayList<Object> river, int deckSize, String powerSuit, Player def){
+        if(river.size() == 6 || river.size() == def.numCards()){
+            return new DurakInput(-1, -1, false, false, true);
+        }
         ArrayList<Card> temp = new ArrayList<Card>(super.cards());
         if(river.size() == 0){
             return new DurakInput(0, -1, false, true, false);

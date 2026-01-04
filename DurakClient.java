@@ -1,7 +1,7 @@
 import java.util.*;
-import java.util.concurrent.TimeUnit;
+//import java.util.concurrent.TimeUnit;
 public class DurakClient{
-    public static void main(String[] args) throws InterruptedException{
+    public static void main(String[] args){
         String name;
         Scanner in = new Scanner(System.in);
 
@@ -10,9 +10,13 @@ public class DurakClient{
         //in.close();
 
         Durak game = new Durak(name);
-        while(!game.gameEnded()){
-            game.nextTurn();
-            //TimeUnit.SECONDS.sleep(1);
+        try{
+            while(!game.gameEnded()){
+                game.nextTurn();
+                //TimeUnit.SECONDS.sleep(1);
+            }
+        }catch(Exception e){
+            System.out.println("Exception thrown, terminating program.\nException message: " + e.getLocalizedMessage());
         }
         System.out.println("The loser is " + game.getLoser() + ".");
     }

@@ -1,5 +1,6 @@
 import java.util.ArrayList;
 import java.util.Scanner;
+import java.util.concurrent.TimeUnit;
 public class Durak{
     private Deck cards;
     private String[] suits = {"Spade", "Club", "Heart", "Diamond"};
@@ -7,13 +8,16 @@ public class Durak{
     private int[] values = {6, 7, 8, 9, 10, 11, 12, 13, 14};
     private String powerSuit;
     private ListNode players;
-    private ListNode playersStorage;
     private boolean defending;
     private boolean openBoard;
     private boolean pickup;
     private boolean pickupEntered;
     private boolean trash;
     private int numPlayers;
+    private Player user;
+    private DurakAi ai1;
+    private DurakAi ai2;
+    private DurakAi ai3;
     private ArrayList<Object> river = new ArrayList<Object>();
 
     public Durak(String name){
@@ -31,32 +35,27 @@ public class Durak{
     }
 
     private void initializePlayers(String name){
-        players = new ListNode(new Player(powerSuit, name), null);
-        playersStorage = new ListNode(new Player(powerSuit, name), null);
+        user = new Player(powerSuit, name);
+        players = new ListNode(user, null);
         ListNode temp = players;
-        ListNode temp2 = playersStorage;
-        players.setNext(new ListNode(new DurakAi(powerSuit, "A.I. 1"), null));
+        ai1 = new DurakAi(powerSuit, "A.I. 1");
+        players.setNext(new ListNode(ai1, null));
         players = players.getNext();
-        playersStorage.setNext(new ListNode(new DurakAi(powerSuit, "A.I. 1"), null));
-        playersStorage = playersStorage.getNext();
-        players.setNext(new ListNode(new DurakAi(powerSuit, "A.I. 2"), null));
+        ai2 = new DurakAi(powerSuit, "A.I. 2");
+        players.setNext(new ListNode(ai2, null));
         players = players.getNext();
-        playersStorage.setNext(new ListNode(new DurakAi(powerSuit, "A.I. 2"), null));
-        playersStorage = playersStorage.getNext();
-        players.setNext(new ListNode(new DurakAi(powerSuit, "A.I. 3"), null));
+        ai3 = new DurakAi(powerSuit, "A.I. 3");
+        players.setNext(new ListNode(ai3, null));
         players = players.getNext();
-        playersStorage.setNext(new ListNode(new DurakAi(powerSuit, "A.I. 3"), null));
-        playersStorage = playersStorage.getNext();
         players.setNext(temp);
         players = players.getNext();
-        playersStorage.setNext(temp2);
-        playersStorage = playersStorage.getNext();
     }
 
     private void initializeCards(){
         for(int i = 0; i < 4; i++){
             for(int j = 0; j < 6; j++){
-                players.getValue().add(cards.deal());
+                Card c = cards.deal();
+                players.getValue().add(c);
             }
             players = players.getNext();
         }
@@ -83,11 +82,13 @@ public class Durak{
         return numPlayers == 1;
     }
 
-    public void nextTurn(){
+    public void nextTurn() throws InterruptedException{
         printGame();
         Scanner in = new Scanner(System.in);
 
         if(defending && legalDefensePossible(players.getNext().getValue())){
+            //printGame();
+            //TimeUnit.SECONDS.sleep(1);
             Player defender = players.getNext().getValue();
             DurakInput defense = new DurakInput();
 
@@ -119,9 +120,9 @@ public class Durak{
                                 res = in.nextLine();
 
                                 if(res.equals("R") || res.equals("r")){
-                                    defense = new DurakInput(-1, -1, true, true, false);
+                                    defense = new DurakInput(playerIndex, -1, true, true, false);
 
-                                    if(!legalDefense(defense, defender)){
+                                    if(!legalDefense(defense, defender)){ // doesnt work
                                         System.out.println("That move is illegal, try again.\n");
                                     }
                                     else{
@@ -169,11 +170,15 @@ public class Durak{
             }
         }
         else if(defending){
+            //printGame();
+            //TimeUnit.SECONDS.sleep(1);
             System.out.println("No legal defense possible, picking up the board.\n"); // maybe only print if this is the user
             pickupEntered = true;
             defending = false;
         }
         else if(pickup){ // possibly move pickup to below attack, since the attackers should be able to place down one final set of cards if the defender decides to pick up
+            //printGame();
+            //TimeUnit.SECONDS.sleep(1);
             Player pickingUp = players.getNext().getValue();
             for(int i = 0; i < river.size(); i++){
                 if(river.get(i) instanceof Combination){
@@ -188,19 +193,25 @@ public class Durak{
             pickup = false;
             pickupEntered = false;
             defending = false;
+            openBoard = false;
             dealCards();
             removeWinners();
             players = players.getNext().getNext();
         }
         else if(trash){ // for both pickup and trash make sure to deal cards until deck is empty or everyone has >6 cards
+            //printGame();
+            //TimeUnit.SECONDS.sleep(1);
             river.clear();
             trash = false;
             defending = false;
+            openBoard = false;
             dealCards();
             removeWinners();
             players = players.getNext();
         }
         else{
+            //printGame();
+            //TimeUnit.SECONDS.sleep(1);
             Player initialAttacker = players.getValue();
             Player defender = players.getNext().getValue();
             DurakInput attack = new DurakInput();
@@ -214,7 +225,7 @@ public class Durak{
 
                 if(temp.getValue() == initialAttacker){
                     if(temp.getValue() instanceof DurakAi){
-                        attack = ((DurakAi)temp.getValue()).playOffense(river, cards.size(), powerSuit);
+                        attack = ((DurakAi)temp.getValue()).playOffense(river, cards.size(), powerSuit, defender);
                         if(!attack.attackEntered()){
                             boolean covered = false;
                             for(int i = 0; i < river.size() && !covered; i++){
@@ -225,7 +236,7 @@ public class Durak{
                             }
                         }
                     }
-                    else if(legalAttackPossible(temp.getValue())){
+                    else if(legalAttackPossible(temp.getValue(), defender)){
                         do{
                             boolean covered = false;
                             for(int i = 0; i < river.size() && !covered; i++){
@@ -248,7 +259,7 @@ public class Durak{
                                         if(index < 0 /*<= 0 since index is printed starting with 1? */|| index >= temp.getValue().cards().size()){
                                             System.out.println("Index is out of bounds, try again.\n");
                                         }
-                                        else if(!legalAttack(attack, temp.getValue())){
+                                        else if(!legalAttack(attack, temp.getValue(), defender)){
                                             System.out.println("That move is illegal, try again.\n");
                                         }
                                         else{
@@ -267,7 +278,7 @@ public class Durak{
                                     if(index < 0 /*<= 0 since index is printed starting with 1? */|| index >= temp.getValue().cards().size()){
                                         System.out.println("Index is out of bounds, try again.\n");
                                     }
-                                    else if(!legalAttack(attack, temp.getValue())){
+                                    else if(!legalAttack(attack, temp.getValue(), defender)){
                                         System.out.println("That move is illegal, try again.\n");
                                     }
                                     else{
@@ -290,7 +301,7 @@ public class Durak{
                                         if(index < 0 /*<= 0 since index is printed starting with 1? */|| index >= temp.getValue().cards().size()){
                                             System.out.println("Index is out of bounds, try again.\n");
                                         }
-                                        else if(!legalAttack(attack, temp.getValue())){
+                                        else if(!legalAttack(attack, temp.getValue(), defender)){
                                             System.out.println("That move is illegal, try again.\n");
                                         }
                                         else{
@@ -315,7 +326,7 @@ public class Durak{
                 }
                 else if(openBoard && temp.getValue() != defender){
                     if(temp.getValue() instanceof DurakAi){
-                        attack = ((DurakAi)temp.getValue()).playOffense(river, cards.size(), powerSuit);
+                        attack = ((DurakAi)temp.getValue()).playOffense(river, cards.size(), powerSuit, defender);
                     }
                     else{
                         do{
@@ -333,7 +344,7 @@ public class Durak{
                                     if(index < 0 /*<= 0 since index is printed starting with 1? */|| index >= temp.getValue().cards().size()){
                                         System.out.println("Index is out of bounds, try again.\n");
                                     }
-                                    else if(!legalAttack(attack, temp.getValue())){
+                                    else if(!legalAttack(attack, temp.getValue(), defender)){
                                         System.out.println("That move is illegal, try again.\n");
                                     }
                                     else{
@@ -347,10 +358,13 @@ public class Durak{
 
                 if(attack.attackEntered()){
                     river.add(temp.getValue().play(attack.indexPlayerCardInput()));
+                    //printGame();
+                    //TimeUnit.SECONDS.sleep(1);
                 }
                 else{
                     temp = temp.getNext();
                     count--;
+                    //TimeUnit.SECONDS.sleep(1);
                 }
 
                 attack = new DurakInput();
@@ -407,21 +421,13 @@ public class Durak{
     private void printGame(){
         char[][] print = new char[43][100];
         int numPrint = 0;
-        Player user = playersStorage.getValue();
-        Player ai1 = playersStorage.getNext().getValue();
-        Player ai2 = playersStorage.getNext().getNext().getValue();
-        Player ai3 = playersStorage.getNext().getNext().getNext().getValue();
 
-        for(int r = 0; r < print.length; r++)
-        {
-            for(int c = 0; c < print[r].length; c++)
-            {
-                if(r == 0 || r == print.length - 1 || c == 0 || c == print[r].length - 1)
-                {
+        for(int r = 0; r < print.length; r++){
+            for(int c = 0; c < print[r].length; c++){
+                if(r == 0 || r == print.length - 1 || c == 0 || c == print[r].length - 1){
                     print[r][c] = '*';
                 }
-                else
-                {
+                else{
                     print[r][c] = ' ';
                 }
             }
@@ -598,171 +604,234 @@ public class Durak{
         print[22][90] = (char)(ai1.cards().size() % 10 + 48);
 
         // from here to line 574 is for printing the user's cards
-        char[][] cardPrint1;
+        char[][] cardPrint1; // can print up to 36 cards in 1 hand (the full deck in a game of Durak is 36 cards)
         char[][] cardPrint2;
         char[][] cardPrint3;
+        char[][] cardPrint4;
+        char[][] cardPrint5;
+        char[][] cardPrint6;
 
-        if(user.numCards() > 6)
-        {
+        if(user.numCards() > 6){
             cardPrint1 = new char[8][60];
         }
-        else if(user.numCards() > 0)
-        {
+        else if(user.numCards() > 0){
             cardPrint1 = new char[8][10 * user.numCards()];
         }
-        else
-        {
+        else{
             cardPrint1 = new char[0][0];
         }
 
-        if(user.numCards() > 12)
-        {
+        if(user.numCards() > 12){
             cardPrint2 = new char[8][60];
         }
-        else if(user.numCards() > 6)
-        {
+        else if(user.numCards() > 6){
             cardPrint2 = new char[8][10 * (user.numCards() - 6)];
         }
-        else
-        {
+        else{
             cardPrint2 = new char[0][0];
         }
 
-        if(user.numCards() > 18)
-        {
+        if(user.numCards() > 18){
             cardPrint3 = new char[8][60];
         }
-        else if(user.numCards() > 12)
-        {
+        else if(user.numCards() > 12){
             cardPrint3 = new char[8][10 * (user.numCards() - 12)];
         }
-        else
-        {
+        else{
             cardPrint3 = new char[0][0];
         }
 
-        for(int r = 0; r < cardPrint1.length; r++)
-        {
-            for(int c = 0; c < cardPrint1[r].length; c++)
-            {
-                if(numPrint < user.numCards() * 2 && r == 1 && c != 0 && c != 7 && c < 8)
-                {
+        if(user.numCards() > 24){
+            cardPrint4 = new char[8][60];
+        }
+        else if(user.numCards() > 18){
+            cardPrint4 = new char[8][10 * (user.numCards() - 18)];
+        }
+        else{
+            cardPrint4 = new char[0][0];
+        }
+
+        if(user.numCards() > 30){
+            cardPrint5 = new char[8][60];
+        }
+        else if(user.numCards() > 24){
+            cardPrint5 = new char[8][10 * (user.numCards() - 24)];
+        }
+        else{
+            cardPrint5 = new char[0][0];
+        }
+
+        if(user.numCards() > 36){
+            cardPrint6 = new char[8][60];
+        }
+        else if(user.numCards() > 30){
+            cardPrint6 = new char[8][10 * (user.numCards() - 30)];
+        }
+        else{
+            cardPrint6 = new char[0][0];
+        }
+
+        for(int r = 0; r < cardPrint1.length; r++){
+            for(int c = 0; c < cardPrint1[r].length; c++){
+                if(numPrint < user.numCards() * 2 && r == 1 && c != 0 && c != 7 && c < 8){
                     cardPrint1[r][c] = '_';
                 }
-                else if(numPrint < user.numCards() * 2 && r == 2 && c == 0)
-                {
+                else if(numPrint < user.numCards() * 2 && r == 2 && c == 0){
                     cardPrint1[r][c] = '/';
                 }
-                else if(numPrint < user.numCards() * 2 && r == 2 && c == 7)
-                {
+                else if(numPrint < user.numCards() * 2 && r == 2 && c == 7){
                     cardPrint1[r][c] = '\\';
                 }
-                else if(numPrint < user.numCards() * 2 && r > 2 && r < 7 &&(c == 0 || c == 7))
-                {
+                else if(numPrint < user.numCards() * 2 && r > 2 && r < 7 &&(c == 0 || c == 7)){
                     cardPrint1[r][c] = '|';
                 }
-                else if(numPrint < user.numCards() * 2 && r == 7 && c != 0 && c != 7 && c < 8)
-                {
+                else if(numPrint < user.numCards() * 2 && r == 7 && c != 0 && c != 7 && c < 8){
                     cardPrint1[r][c] = '_';
                 }
-                else if(numPrint < user.numCards() * 2 && r == 7 && c == 0)
-                {
+                else if(numPrint < user.numCards() * 2 && r == 7 && c == 0){
                     cardPrint1[r][c] = '\\';
                 }
-                else if(numPrint < user.numCards() * 2 && r == 7 && c == 7)
-                {
+                else if(numPrint < user.numCards() * 2 && r == 7 && c == 7){
                     cardPrint1[r][c] = '/';
                 }
-                else if(numPrint < user.numCards() * 2 && c > 9)
-                {
+                else if(numPrint < user.numCards() * 2 && c > 9){
                     cardPrint1[r][c] = cardPrint1[r][c - 10];
                 }
-                else
-                {
+                else{
                     cardPrint1[r][c] = ' ';
                 }
-                if(cardPrint1[r][c] == '/')
-                {
+                if(cardPrint1[r][c] == '/'){
                     numPrint++;
                 }
             }
         }
+
         numPrint = 0;
-        for(int r = 0; r < cardPrint2.length; r++)
-        {
-            for(int c = 0; c < cardPrint2[r].length; c++)
-            {
+        for(int r = 0; r < cardPrint2.length; r++){
+            for(int c = 0; c < cardPrint2[r].length; c++){
                 cardPrint2[r][c] = cardPrint1[r][c]; 
             }
         }
 
-        for(int r = 0; r < cardPrint3.length; r++)
-        {
-            for(int c = 0; c < cardPrint3[r].length; c++)
-            {
+        for(int r = 0; r < cardPrint3.length; r++){
+            for(int c = 0; c < cardPrint3[r].length; c++){
                 cardPrint3[r][c] = cardPrint1[r][c];
+            }
+        }
+
+        for(int r = 0; r < cardPrint4.length; r++){
+            for(int c = 0; c < cardPrint4[r].length; c++){
+                cardPrint4[r][c] = cardPrint1[r][c];
+            }
+        }
+
+        for(int r = 0; r < cardPrint5.length; r++){
+            for(int c = 0; c < cardPrint5[r].length; c++){
+                cardPrint5[r][c] = cardPrint1[r][c];
+            }
+        }
+
+        for(int r = 0; r < cardPrint6.length; r++){
+            for(int c = 0; c < cardPrint6[r].length; c++){
+                cardPrint6[r][c] = cardPrint1[r][c];
             }
         }
 
         ArrayList<Card> userCards = user.cards();
         int col = 3;
 
-        for(int i = 0; i < userCards.size(); i++)
-        {
-            if(i < 6)
-            {
+        for(int i = 0; i < userCards.size(); i++){
+            if(i < 6){
                 cardPrint1[4][col] = userCards.get(i).rank().charAt(0);
-                if(userCards.get(i).rank().equals("10"))
-                {
+                if(userCards.get(i).rank().equals("10")){
                     cardPrint1[4][col+1] = userCards.get(i).rank().charAt(1);
                     cardPrint1[4][col+2] = userCards.get(i).suit().charAt(0);
                 }
-                else
-                {
+                else{
                     cardPrint1[4][col+1] = userCards.get(i).suit().charAt(0);
                 }
                 cardPrint1[4][col+5] = (char)(((i+1) / 10) + 48);
                 cardPrint1[4][col+6] = (char)(((i+1) % 10) + 48);
                 col += 10;
-                if(i == 5)
-                {
+                if(i == 5){
                     col = 3;
                 }
             }
-            else if(i < 12)
-            {
+            else if(i < 12){
                 cardPrint2[4][col] = userCards.get(i).rank().charAt(0);
-                if(userCards.get(i).rank().equals("10"))
-                {
+                if(userCards.get(i).rank().equals("10")){
                     cardPrint2[4][col+1] = userCards.get(i).rank().charAt(1);
                     cardPrint2[4][col+2] = userCards.get(i).suit().charAt(0);
                 }
-                else
-                {
+                else{
                     cardPrint2[4][col+1] = userCards.get(i).suit().charAt(0);
                 }
                 cardPrint2[4][col+5] = (char)(((i+1) / 10) + 48);
                 cardPrint2[4][col+6] = (char)(((i+1) % 10) + 48);
                 col+=10;
-                if(i == 11)
-                {
+                if(i == 11){
                     col = 3;
                 }
             }
-            else
-            {
+            else if(i < 18){
                 cardPrint3[4][col] = userCards.get(i).rank().charAt(0);
-                if(userCards.get(i).rank().equals("10"))
-                {
+                if(userCards.get(i).rank().equals("10")){
                     cardPrint3[4][col+1] = userCards.get(i).rank().charAt(1);
                     cardPrint3[4][col+2] = userCards.get(i).suit().charAt(0);
                 }
-                else
-                {
+                else{
                     cardPrint3[4][col+1] = userCards.get(i).suit().charAt(0);
                 }
                 cardPrint3[4][col+5] = (char)(((i+1) / 10) + 48);
                 cardPrint3[4][col+6] = (char)(((i+1) % 10) + 48);
+                col += 10;
+                if(i == 17){
+                    col = 3;
+                }
+            }
+            else if(i < 24){
+                cardPrint4[4][col] = userCards.get(i).rank().charAt(0);
+                if(userCards.get(i).rank().equals("10")){
+                    cardPrint4[4][col+1] = userCards.get(i).rank().charAt(1);
+                    cardPrint4[4][col+2] = userCards.get(i).suit().charAt(0);
+                }
+                else{
+                    cardPrint4[4][col+1] = userCards.get(i).suit().charAt(0);
+                }
+                cardPrint4[4][col+5] = (char)(((i+1) / 10) + 48);
+                cardPrint4[4][col+6] = (char)(((i+1) % 10) + 48);
+                col += 10;
+                if(i == 23){
+                    col = 3;
+                }
+            }
+            else if(i < 30){
+                cardPrint5[4][col] = userCards.get(i).rank().charAt(0);
+                if(userCards.get(i).rank().equals("10")){
+                    cardPrint5[4][col+1] = userCards.get(i).rank().charAt(1);
+                    cardPrint5[4][col+2] = userCards.get(i).suit().charAt(0);
+                }
+                else{
+                    cardPrint5[4][col+1] = userCards.get(i).suit().charAt(0);
+                }
+                cardPrint5[4][col+5] = (char)(((i+1) / 10) + 48);
+                cardPrint5[4][col+6] = (char)(((i+1) % 10) + 48);
+                col += 10;
+                if(i == 29){
+                    col = 3;
+                }
+            }
+            else{
+                cardPrint6[4][col] = userCards.get(i).rank().charAt(0);
+                if(userCards.get(i).rank().equals("10")){
+                    cardPrint6[4][col+1] = userCards.get(i).rank().charAt(1);
+                    cardPrint6[4][col+2] = userCards.get(i).suit().charAt(0);
+                }
+                else{
+                    cardPrint6[4][col+1] = userCards.get(i).suit().charAt(0);
+                }
+                cardPrint6[4][col+5] = (char)(((i+1) / 10) + 48);
+                cardPrint6[4][col+6] = (char)(((i+1) % 10) + 48);
                 col += 10;
             }
         }
@@ -771,52 +840,47 @@ public class Durak{
         col = 3;
         int colO = 27;
         int row = 10;
-        for(int i = 0; i < river.size(); i++)
-        {
-            if(river.get(i) instanceof Card)
-            {
-            print[row][colO] = ' ';
-            print[row][colO + 1] = '_';
-            print[row][colO + 2] = '_';
-            print[row][colO + 3] = '_';
-            print[row][colO + 4] = '_';
-            print[row][colO + 5] = '_';
-            print[row][colO + 6] = '_';
-            print[row][colO + 7] = ' ';
-            print[row + 1][colO] = '/';
-            print[row + 1][colO + 7] = '\\';
-            print[row + 2][colO] = '|';
-            print[row + 2][colO + 7] = '|';
-            print[row + 3][colO] = '|';
-            print[row + 3][colO + 7] = '|';
-            print[row + 4][colO] = '|';
-            print[row + 4][colO + 7] = '|';
-            print[row + 5][colO] = '|';
-            print[row + 5][colO + 7] = '|';
-            print[row + 6][colO] = '\\';
-            print[row + 6][colO + 1] = '_';
-            print[row + 6][colO + 2] = '_';
-            print[row + 6][colO + 3] = '_';
-            print[row + 6][colO + 4] = '_';
-            print[row + 6][colO + 5] = '_';
-            print[row + 6][colO + 6] = '_';
-            print[row + 6][colO + 7] = '/';
-            print[row + 3][colO + 3] = (char)(((Card)(river.get(i))).rank().charAt(0));
-            print[row + 3][colO + 8] = (char)(((i+1) / 10) + 48);
-            print[row + 3][colO + 9] = (char)(((i+1) % 10) + 48);
+        for(int i = 0; i < river.size(); i++){
+            if(river.get(i) instanceof Card){
+                print[row][colO] = ' ';
+                print[row][colO + 1] = '_';
+                print[row][colO + 2] = '_';
+                print[row][colO + 3] = '_';
+                print[row][colO + 4] = '_';
+                print[row][colO + 5] = '_';
+                print[row][colO + 6] = '_';
+                print[row][colO + 7] = ' ';
+                print[row + 1][colO] = '/';
+                print[row + 1][colO + 7] = '\\';
+                print[row + 2][colO] = '|';
+                print[row + 2][colO + 7] = '|';
+                print[row + 3][colO] = '|';
+                print[row + 3][colO + 7] = '|';
+                print[row + 4][colO] = '|';
+                print[row + 4][colO + 7] = '|';
+                print[row + 5][colO] = '|';
+                print[row + 5][colO + 7] = '|';
+                print[row + 6][colO] = '\\';
+                print[row + 6][colO + 1] = '_';
+                print[row + 6][colO + 2] = '_';
+                print[row + 6][colO + 3] = '_';
+                print[row + 6][colO + 4] = '_';
+                print[row + 6][colO + 5] = '_';
+                print[row + 6][colO + 6] = '_';
+                print[row + 6][colO + 7] = '/';
+                print[row + 3][colO + 3] = (char)(((Card)(river.get(i))).rank().charAt(0));
+                print[row + 3][colO + 8] = (char)(((i+1) / 10) + 48);
+                print[row + 3][colO + 9] = (char)(((i+1) % 10) + 48);
 
-            if(((Card)river.get(i)).rank().equals("10"))
-            {
-                print[row + 3][colO + 4] = (char)(((Card)(river.get(i))).rank().charAt(1));
-                print[row + 3][colO + 5] = (char)(((Card)(river.get(i))).suit().charAt(0));
+                if(((Card)river.get(i)).rank().equals("10")){
+                    print[row + 3][colO + 4] = (char)(((Card)(river.get(i))).rank().charAt(1));
+                    print[row + 3][colO + 5] = (char)(((Card)(river.get(i))).suit().charAt(0));
+                }
+                else{
+                    print[row + 3][colO + 4] = (char)(((Card)(river.get(i))).suit().charAt(0));
+                }
             }
-            else
-            {
-                print[row + 3][colO + 4] = (char)(((Card)(river.get(i))).suit().charAt(0));
-            }
-            }
-            else
-            {
+            else{
                 Card[] tempC = ((Combination)river.get(i)).cards();
                 print[row][colO] = ' ';
                 print[row][colO + 1] = '_';
@@ -846,13 +910,11 @@ public class Durak{
                 print[row + 6][colO + 7] = '/';
                 print[row + 3][colO + 3] = (char)(tempC[0].rank().charAt(0));
 
-                if(tempC[0].rank().equals("10"))
-                {
+                if(tempC[0].rank().equals("10")){
                     print[row + 3][colO + 4] = (char)(tempC[0].rank().charAt(1));
                     print[row + 3][colO + 5] = (char)(tempC[0].suit().charAt(0));
                 }
-                else
-                {
+                else{
                     print[row + 3][colO + 4] = (char)(tempC[0].suit().charAt(0));
                 }
 
@@ -884,19 +946,16 @@ public class Durak{
                 print[row + 10][colO + 9] = '/';
                 print[row + 7][colO + 5] = (char)(tempC[1].rank().charAt(0));
 
-                if(tempC[1].rank().equals("10"))
-                {
+                if(tempC[1].rank().equals("10")){
                     print[row + 7][colO + 6] = (char)(tempC[1].rank().charAt(1));
                     print[row + 7][colO + 7] = (char)(tempC[1].suit().charAt(0));
                 }
-                else
-                {
+                else{
                     print[row + 7][colO + 6] = (char)(tempC[1].suit().charAt(0));
                 }
             }
             colO += 17;
-            if(i == 2)
-            {
+            if(i == 2){
                 colO = 27;
                 row += 11;
             }
@@ -905,34 +964,44 @@ public class Durak{
         // here to line 760 is actually printing
         colO = 27;
         row = 10;
-        for(char[] c : print)
-        {
-            for(char e : c)
-            {
+        for(char[] c : print){
+            for(char e : c){
                 System.out.print(e);
             }
             System.out.println();
         }
-        for(char[] c : cardPrint1)
-        {
-            for(char e : c)
-            {
+        for(char[] c : cardPrint1){
+            for(char e : c){
                 System.out.print(e);
             }
             System.out.println();
         }
-        for(char[] c : cardPrint2)
-        {
-            for(char e : c)
-            {
+        for(char[] c : cardPrint2){
+            for(char e : c){
                 System.out.print(e);
             }
             System.out.println();
         }
-        for(char[] c : cardPrint3)
-        {
-            for(char e : c)
-            {
+        for(char[] c : cardPrint3){
+            for(char e : c){
+                System.out.print(e);
+            }
+            System.out.println();
+        }
+        for(char[] c : cardPrint4){
+            for(char e : c){
+                System.out.print(e);
+            }
+            System.out.println();
+        }
+        for(char[] c : cardPrint5){
+            for(char e : c){
+                System.out.print(e);
+            }
+            System.out.println();
+        }
+        for(char[] c : cardPrint6){
+            for(char e : c){
                 System.out.print(e);
             }
             System.out.println();
@@ -962,13 +1031,17 @@ public class Durak{
         return possible;
     }
 
-    public boolean legalAttackPossible(Player p){
+    public boolean legalAttackPossible(Player p, Player def){
+        if(river.size() == 6 || river.size() == def.numCards()){
+            return false;
+        }
+
         ArrayList<Card> cards = new ArrayList<Card>(p.cards());
         boolean possible = false;
 
         for(int i = 0; i < river.size(); i++){
             for(int j = 0; j < cards.size(); j++){
-                if(legalAttack(new DurakInput(j, -1, false, true, false), p)){
+                if(legalAttack(new DurakInput(j, -1, false, true, false), p, def)){
                     possible = true;
                     break;
                 }
@@ -993,10 +1066,10 @@ public class Durak{
         }
     }
 
-    public boolean legalAttack(DurakInput d, Player p){
+    public boolean legalAttack(DurakInput d, Player p, Player def){
         boolean legal = false;
 
-        if(d.attackEntered()){
+        if(d.attackEntered() && river.size() != 6 && def.numCards() != river.size()){
             for(int i = 0; i < river.size(); i++){
                 Card playerCard = p.getCard(d.indexPlayerCardInput());
                 if(river.get(i) instanceof Card && ((Card)river.get(i)).rank().equals(playerCard.rank())){
@@ -1028,7 +1101,7 @@ public class Durak{
             else if(i > 0 && allUncover){
                 Card c1 = (Card)riv.get(i);
                 Card c2 = (Card)riv.get(i-1);
-                if(!(c1.suit().equals(c2.suit()) && c2.rank().equals(c1.rank()))){
+                if(!c2.rank().equals(c1.rank())){
                     allSame = false;
                     break;
                 }
