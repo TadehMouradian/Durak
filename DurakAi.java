@@ -15,7 +15,7 @@ public class DurakAi extends Player{
         longP = (int)(Math.random() * 2) + 1;
     }
 
-    public DurakInput playDefense(ArrayList<Object> river, int deckSize, String powerSuit){
+    public DurakInput playDefense(ArrayList<Object> river, int deckSize, String powerSuit, Player nextDef){
         Durak d = new Durak("temp");
         Player t = new Player(powerSuit, ".");
         ArrayList<Card> temp = new ArrayList<Card>(super.cards());
@@ -24,14 +24,14 @@ public class DurakAi extends Player{
             t.add(temp.get(i));
         }
 
-        if(d.rotatePossible(river)){
+        if(d.rotatePossible(river, nextDef)){
             for(int i = 0; i < temp.size(); i++){
                 if(temp.get(i).rank().equals(((Card)river.get(0)).rank())){
                     return new DurakInput(i, -1, true, false, false);
                 }
             }
         }
-        if(d.legalDefensePossible(t)){
+        if(d.legalDefensePossible(t, nextDef)){
             for(int i = 0; i < river.size(); i++){
                 if(river.get(i) instanceof Card){
                     for(int j = 0; j < temp.size(); j++){
@@ -140,7 +140,17 @@ public class DurakAi extends Player{
     }
 
     public DurakInput playOffense(ArrayList<Object> river, int deckSize, String powerSuit, Player def){
-        if(river.size() == 6 || river.size() == def.numCards()){
+        int numCards = 0;
+        for(int i = 0; i < river.size(); i++){
+            if(river.get(i) instanceof Card){
+                numCards++;
+            }
+        }
+        
+        if(numCards == def.numCards()){
+            return new DurakInput(-1, -1, false, false, true);
+        }
+        if(river.size() == 6){
             return new DurakInput(-1, -1, false, false, true);
         }
         ArrayList<Card> temp = new ArrayList<Card>(super.cards());
